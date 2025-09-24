@@ -10,17 +10,19 @@ import (
 
 func Add(name string, f *os.File) {
 	var tasks []Task
-	fileInfo, err := f.Stat()
+	defer f.Close()
+
+	stat, err := os.Stat("tasks-data.json")
 	if err != nil {
 		log.Fatalf("file stat: %v", err)
 	}
-
-	if fileInfo.Size() != 0 {
-		fileValue, err := os.ReadFile("tasks-data.json")
+	if stat.Size() != 0 {
+		n, err := os.ReadFile("tasks-data.json")
 		if err != nil {
 			log.Fatalf("read file: %v", err)
 		}
-		err = json.Unmarshal(fileValue, &tasks)
+
+		err = json.Unmarshal(n, &tasks)
 		if err != nil {
 			log.Fatalf("unmarshal fail: %v", err)
 		}
@@ -44,14 +46,13 @@ func Add(name string, f *os.File) {
 
 	tasks = append(tasks, task)
 
-	d, err := json.Marshal(tasks)
+	d, err := json.Marshal(&tasks)
 	if err != nil {
 		log.Fatalf("marshal fail: %v", err)
 	}
 
-	if _, err := f.Write([]byte(d)); err != nil {
+	if err := os.WriteFile("tasks-data.json", d, 0644); err != nil {
 		log.Fatalf("failed to write: %v", err)
 	}
 
-	f.Close()
 }
