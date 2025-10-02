@@ -1,30 +1,22 @@
 package action
 
 import (
-	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 	"time"
+
+	"github.com/japarooo0/my-task-tracker-cli/actions/handlers"
 )
 
-func Update(id int, name string, f *os.File) {
+func Update(id int, name string, f *os.File) error {
 	defer f.Close()
 	var tasks []Task
 
-	stat, err := f.Stat()
-	if err != nil {
-		log.Fatalf("file stat: %v", err)
-	}
+	isEmpty := handlers.IsFileEmpty(f.Name())
 
-	if stat.Size() != 0 {
-		b, err := os.ReadFile("tasks-data.json")
-		if err != nil {
-			log.Fatalf("file stat: %v", err)
-		}
-
-		if err := json.Unmarshal(b, &tasks); err != nil {
-			log.Fatalf("file stat: %v", err)
+	if !isEmpty {
+		if err := handlers.ReadAndUnmarshal(f.Name(), &tasks); err != nil {
+			return err
 		}
 	}
 
@@ -39,11 +31,14 @@ func Update(id int, name string, f *os.File) {
 	}()
 
 	if idx == -1 {
-		log.Fatalf("no id found")
+		return fmt.Errorf("no id found")
 	}
 
+	if err := tasks[idx].Validate(); err != nil {
+		return err
+	}
 	tasks[idx].Name = name
-	tasks[idx].UpdatedAt = time.Now().Format("2006-01-02 15:04:05")
+	tasks[idx].UpdatedAt = time.Now().Format(time.RFC3339)
 
 	// for i, v := range tasks {
 	// 	if v.Id == id {
@@ -53,14 +48,10 @@ func Update(id int, name string, f *os.File) {
 	// 	}
 	// }
 
-	newJson, err := json.Marshal(&tasks)
-	if err != nil {
-		log.Fatalf("failed marshal: %v", err)
-	}
-
-	if err = os.WriteFile("tasks-data.json", newJson, 0644); err != nil {
-		log.Fatalf("failed to write: %v", err)
+	if err := handlers.MarshalAndWrite(f.Name(), &tasks); err != nil {
+		return err
 	}
 
 	fmt.Printf("Update success for id: %d", id)
+	return nil
 }

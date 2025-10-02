@@ -5,53 +5,43 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
+
+	"github.com/japarooo0/my-task-tracker-cli/actions/handlers"
 )
 
-func ListTasks(f *os.File) {
+func ListTasks(f *os.File) error {
 	defer f.Close()
+	defer os.Exit(0)
 	var tasks []Task
 
-	stat, err := os.Stat("tasks-data.json")
-	if err != nil {
-		log.Fatalf("file stat: %v", err)
-	}
+	isEmpty := handlers.IsFileEmpty(f.Name())
 
-	if stat.Size() != 0 {
-		b, err := os.ReadFile("tasks-data.json")
-		if err != nil {
-			log.Fatalf("read file: %v", err)
-		}
-
-		if err := json.Unmarshal(b, &tasks); err != nil {
-			log.Fatalf("JSON unmarshal: %v", err)
+	if !isEmpty {
+		if err := handlers.ReadAndUnmarshal(f.Name(), &tasks); err != nil {
+			return err
 		}
 	}
-
 	fmt.Print("All Task: \n")
+	fmt.Printf("%15s %15s %15s\n", "Name", "Status", "Created At")
 	for _, v := range tasks {
-		fmt.Printf("%3d. %9s | Status: %s\n", v.Id, v.Name, v.Status)
+		parseTime, _ := time.Parse(time.RFC3339, v.CreatedAt)
+		fmt.Printf("%d -- %9s | %s |  %v\n", v.Id, v.Name, v.Status, parseTime.Format("2006-01-02 15:04:05"))
 	}
 
-	os.Exit(0)
+	return nil
 }
 
-func ListDone(done string, f *os.File) {
+func ListDone(done string, f *os.File) error {
 	defer f.Close()
+
 	var tasks []Task
 
-	stat, err := os.Stat("tasks-data.json")
-	if err != nil {
-		log.Fatalf("file stat: %v", err)
-	}
+	isEmpty := handlers.IsFileEmpty(f.Name())
 
-	if stat.Size() != 0 {
-		b, err := os.ReadFile("tasks-data.json")
-		if err != nil {
-			log.Fatalf("read file: %v", err)
-		}
-
-		if err := json.Unmarshal(b, &tasks); err != nil {
-			log.Fatalf("JSON unmarshal: %v", err)
+	if !isEmpty {
+		if err := handlers.ReadAndUnmarshal(f.Name(), &tasks); err != nil {
+			return err
 		}
 	}
 
@@ -64,27 +54,30 @@ func ListDone(done string, f *os.File) {
 		}
 	}
 
+	return nil
 }
 
 func ListTodo(todo string, f *os.File) {
 	defer f.Close()
 	var tasks []Task
 
-	stat, err := os.Stat("tasks-data.json")
+	stat, err := f.Stat()
 	if err != nil {
 		log.Fatalf("file stat: %v ", err)
 	}
 
-	if stat.Size() != 0 {
-		b, err := os.ReadFile("tasks-data.json")
-		if err != nil {
-			log.Fatalf("read file: %v", err)
-		}
+	if stat.Size() == 0 {
+		log.Fatalf("add some task first")
+	}
 
-		if err := json.Unmarshal(b, &tasks); err != nil {
-			log.Fatalf("JSON unmarshal: %v", err)
+	b, err := os.ReadFile(f.Name())
+	if err != nil {
+		log.Fatalf("read file: %v", err)
+	}
 
-		}
+	if err := json.Unmarshal(b, &tasks); err != nil {
+		log.Fatalf("JSON unmarshal: %v", err)
+
 	}
 
 	var idx int
@@ -103,20 +96,22 @@ func ListInProgress(progress string, f *os.File) {
 	defer f.Close()
 	var tasks []Task
 
-	stat, err := os.Stat("tasks-data.json")
+	stat, err := f.Stat()
 	if err != nil {
 		log.Fatalf("file stat: %v", err)
 	}
 
-	if stat.Size() != 0 {
-		b, err := os.ReadFile("tasks-data.json")
-		if err != nil {
-			log.Fatalf("read file: %v", err)
-		}
+	if stat.Size() == 0 {
+		log.Fatalf("add some task first")
+	}
 
-		if err := json.Unmarshal(b, &tasks); err != nil {
-			log.Fatalf("JSON unmarshal: %v", err)
-		}
+	b, err := os.ReadFile(f.Name())
+	if err != nil {
+		log.Fatalf("read file: %v", err)
+	}
+
+	if err := json.Unmarshal(b, &tasks); err != nil {
+		log.Fatalf("JSON unmarshal: %v", err)
 	}
 
 	var idx int

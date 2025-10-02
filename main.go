@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"strconv"
@@ -13,9 +12,9 @@ import (
 
 func main() {
 
-	f, err := os.OpenFile("tasks-data.json", os.O_CREATE|os.O_RDWR, 0644)
+	f, err := os.OpenFile("tasks.json", os.O_RDWR|os.O_CREATE, 0644)
 	if err != nil {
-		panic(fmt.Errorf("creating file: %w", err))
+		log.Fatalf("error creating file: %v", err)
 	}
 
 	switch os.Args[1] {
@@ -34,9 +33,35 @@ func main() {
 			log.Fatalf("id must be a number: %v", err)
 		}
 		action.Delete(v, f)
+	case "mark-in-progress":
+		v, err := strconv.Atoi(os.Args[2])
+		if err != nil {
+			log.Fatalf("id must be a number: %v", err)
+		}
+		action.MarkInProgress(v, f)
+	case "mark-done":
+		v, err := strconv.Atoi(os.Args[2])
+		if err != nil {
+			log.Fatalf("id must be a number: %v", err)
+		}
+		action.MarkDone(v, f)
+	case "list":
+		if len(os.Args) == 2 {
+			action.ListTasks(f)
+		}
+
+		if arg2 := os.Args[2]; arg2 == "done" {
+			action.ListDone(arg2, f)
+		} else if arg2 == "todo" {
+			action.ListTodo(arg2, f)
+		} else if arg2 == "in-progress" {
+			action.ListInProgress(arg2, f)
+		} else {
+			log.Fatal("list invalid")
+		}
 	default:
 		log.Fatal("action invalid")
 	}
 
-	defer os.Exit(0)
+	os.Exit(0)
 }

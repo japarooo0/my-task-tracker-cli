@@ -1,87 +1,63 @@
 package action
 
 import (
-	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 	"time"
+
+	"github.com/japarooo0/my-task-tracker-cli/actions/handlers"
 )
 
-func MarkInProgress(id int, f *os.File) {
+func MarkInProgress(id int, f *os.File) error {
 	defer f.Close()
 	var tasks []Task
 
-	stat, err := os.Stat("tasks-data.json")
-	if err != nil {
-		log.Fatalf("file stat: %v", err)
-	}
+	isEmpty := handlers.IsFileEmpty(f.Name())
 
-	if stat.Size() != 0 {
-		b, err := os.ReadFile("tasks-data.json")
-		if err != nil {
-			log.Fatalf("read file: %v", err)
-		}
-
-		if err := json.Unmarshal(b, &tasks); err != nil {
-			log.Fatalf("JSON unmarshal: %v", err)
+	if !isEmpty {
+		if err := handlers.ReadAndUnmarshal(f.Name(), &tasks); err != nil {
+			return err
 		}
 	}
 
 	for i, v := range tasks {
 		if v.Id == id {
 			tasks[i].Status = "in-progress"
-			tasks[i].UpdatedAt = time.Now().Format("2006-01-02 15:04:05")
+			tasks[i].UpdatedAt = time.Now().Format(time.RFC3339)
 
 		}
 	}
 
-	data, err := json.Marshal(&tasks)
-	if err != nil {
-		log.Fatalf("JSON marshal: %v", err)
-	}
-
-	if err := os.WriteFile("tasks-data.json", data, 0644); err != nil {
-		log.Fatalf("write file: %v", err)
+	if err := handlers.MarshalAndWrite(f.Name(), &tasks); err != nil {
+		return err
 	}
 
 	fmt.Println("Task marking success")
+	return nil
 }
-func MarkDone(id int, f *os.File) {
+func MarkDone(id int, f *os.File) error {
 	defer f.Close()
 	var tasks []Task
 
-	stat, err := os.Stat("tasks-data.json")
-	if err != nil {
-		log.Fatalf("file stat: %v", err)
-	}
+	isEmpty := handlers.IsFileEmpty(f.Name())
 
-	if stat.Size() != 0 {
-		b, err := os.ReadFile("tasks-data.json")
-		if err != nil {
-			log.Fatalf("read file: %v", err)
-		}
-
-		if err := json.Unmarshal(b, &tasks); err != nil {
-			log.Fatalf("JSON unmarshal: %v", err)
+	if !isEmpty {
+		if err := handlers.ReadAndUnmarshal(f.Name(), &tasks); err != nil {
+			return err
 		}
 	}
 
 	for i, v := range tasks {
 		if v.Id == id {
 			tasks[i].Status = "done"
-			tasks[i].UpdatedAt = time.Now().Format("2006-01-02 15:04:05")
+			tasks[i].UpdatedAt = time.Now().Format(time.RFC3339)
 		}
 	}
 
-	data, err := json.Marshal(&tasks)
-	if err != nil {
-		log.Fatalf("JSON marshal: %v", err)
-	}
-
-	if err := os.WriteFile("tasks-data.json", data, 0644); err != nil {
-		log.Fatalf("write file: %v", err)
+	if err := handlers.MarshalAndWrite(f.Name(), &tasks); err != nil {
+		return err
 	}
 
 	fmt.Println("Task marking success")
+	return nil
 }
